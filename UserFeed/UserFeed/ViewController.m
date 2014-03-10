@@ -11,7 +11,6 @@
 #import <Social/Social.h>
 #import "UIAlertView+Blocks.h"
 #import "FBCell.h"
-#import "AFHTTPClient.h"
 #import <FacebookSDK/FacebookSDK.h>
 
 NSString *const kSocialServices = @"SocialServices";
@@ -20,7 +19,6 @@ NSString *const kFBSetup = @"FBSetup";
 @interface ViewController ()
 
 @property (strong) NSArray *posts;
-@property (strong) AFHTTPClient *fbClient;
 @property (strong) FBSession *fbSession;
 
 @end
@@ -65,10 +63,6 @@ BOOL hasFacebook = NO;
 			hasFacebook = YES;
 		}
 	}
-
-	self.fbClient = [[AFHTTPClient alloc]
-	    initWithBaseURL:[NSURL URLWithString:@"https://graph.facebook.com"]];
-	self.fbClient.parameterEncoding = AFFormURLParameterEncoding;
 
 	[self updatePosts];
 	[[NSNotificationCenter defaultCenter]
@@ -126,24 +120,15 @@ BOOL hasFacebook = NO;
 	NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
 	parameters[@"access_token"] = self.fbSession.accessTokenData;
 
-	[self.fbClient getPath:@"me/home"
-	    parameters:parameters
-	    success:^(AFHTTPRequestOperation *operation, id responseObject) {
-//          NSString *responseString =
-//              [[NSString alloc] initWithBytes:[responseObject bytes]
-//                                       length:[responseObject length]
-//                                     encoding:NSUTF8StringEncoding];
-//
-//          NSLog(responseString);
-          NSDictionary *data =
-              [NSJSONSerialization JSONObjectWithData:responseObject
-                                              options:0
-                                                error:NULL];
-          self.posts = [data objectForKey:@"data"];
-          [self.tableView reloadData];
+	FBRequest *request = [FBRequest requestForGraphPath:@"me/home"];
+	[request startWithCompletionHandler:^(FBRequestConnection *connection, id result, NSError *error) {
+		if (error) {
+			[UIAlertView showAlertViewWithTitle:@"Connection Error" message:@"There was an error getting the news feed. Please try again." cancelButtonTitle:@"OK" otherButtonTitles:nil onDismiss:nil onCancel:nil];
+		} else {
+			self.posts = [result objectForKey:@"data"];
+			[self.tableView reloadData];
 		}
-	    failure:^(AFHTTPRequestOperation *operation,
-	              NSError *error) { NSLog(error.description); }];
+	}];
 }
 
 #pragma mark - tableView
@@ -160,27 +145,45 @@ BOOL hasFacebook = NO;
 - (CGFloat)tableView:(UITableView *)tableView
     heightForRowAtIndexPath:(NSIndexPath *)indexPath {
 	NSDictionary *post = [self.posts objectAtIndex:indexPath.row];
-	NSString *string = post[@"message"];
-	NSDictionary *attributes = @{
-		NSFontAttributeName : [UIFont preferredFontForTextStyle:UIFontTextStyleBody]
-	};
-	CGRect bodyFrame =
-	    [string boundingRectWithSize:CGSizeMake(CGRectGetWidth(tableView.bounds),
-	                                            CGFLOAT_MAX)
-	                         options:(NSStringDrawingUsesLineFragmentOrigin |
-	                                  NSStringDrawingUsesFontLeading)
-	                      attributes:attributes
-	                         context:nil];
+	float height = 80;
 
-	return ceilf(CGRectGetHeight(bodyFrame)) + 80;
+	NSString *string = post[@"message"];
+	if (string) {
+		NSDictionary *attributes = @{
+			NSFontAttributeName : [UIFont preferredFontForTextStyle:UIFontTextStyleBody]
+		};
+		CGRect bodyFrame =
+		    [string boundingRectWithSize:CGSizeMake(CGRectGetWidth(tableView.bounds),
+		                                            CGFLOAT_MAX)
+		                         options:(NSStringDrawingUsesLineFragmentOrigin |
+		                                  NSStringDrawingUsesFontLeading)
+		                      attributes:attributes
+		                         context:nil];
+
+		height += ceilf(CGRectGetHeight(bodyFrame));
+	}
+	if (post[@"picture"]) {
+		height += 136 + 12;
+	}
+
+	return height;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 
-	FBCell *fbCell = [tableView dequeueReusableCellWithIdentifier:@"FBCell"];
 	NSDictionary *wallPost = [self.posts objectAtIndex:indexPath.row];
-	fbCell.client = self.fbClient;
+
+	NSString *cellIdentifier;
+	if (wallPost[@"picture"] && wallPost[@"message"]) {
+		cellIdentifier = @"FBPictureCell";
+	} else if (wallPost[@"picture"] && !wallPost[@"message"]) {
+		cellIdentifier = @"FBPictureOnlyCell";
+	} else {
+		cellIdentifier = @"FBCell";
+	}
+
+	FBCell *fbCell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
 	fbCell.wallPost = wallPost;
 
 	return fbCell;

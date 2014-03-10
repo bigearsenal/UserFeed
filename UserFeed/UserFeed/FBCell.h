@@ -7,11 +7,9 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "AFHTTPClient.h"
 
 @interface FBCell : UITableViewCell
 
-@property(strong) AFHTTPClient *client;
 @property(strong, nonatomic) NSDictionary *wallPost;
 
 @end
