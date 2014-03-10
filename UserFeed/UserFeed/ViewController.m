@@ -39,7 +39,7 @@ BOOL hasFacebook = NO;
 		[userDefaults setBool:YES
 		               forKey:kFBSetup];
 		[UIAlertView showAlertViewWithTitle:@"Facebook Setup"
-		                            message:@"For your own app, you must edit the plist entries for FacebookAppID, FacebookDisplayName, and URL types."
+		                            message:@"For your own app, you must edit the plist entries for FacebookAppID, FacebookDisplayName, and URL types. See http://developer.facebook.com for more information."
 		                  cancelButtonTitle:@"OK"
 		                  otherButtonTitles:nil
 		                          onDismiss:nil
