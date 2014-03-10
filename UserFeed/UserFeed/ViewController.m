@@ -15,6 +15,7 @@
 #import <FacebookSDK/FacebookSDK.h>
 
 NSString *const kSocialServices = @"SocialServices";
+NSString *const kFBSetup = @"FBSetup";
 
 @interface ViewController ()
 
@@ -34,15 +35,24 @@ BOOL hasFacebook = NO;
 
 	NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
 
+	if (![userDefaults boolForKey:kFBSetup]) {
+		[userDefaults setBool:YES
+		               forKey:kFBSetup];
+		[UIAlertView showAlertViewWithTitle:@"Facebook Setup"
+		                            message:@"For your own app, you must edit the plist entries for FacebookAppID, FacebookDisplayName, and URL types."
+		                  cancelButtonTitle:@"OK"
+		                  otherButtonTitles:nil
+		                          onDismiss:nil
+		                           onCancel:nil];
+	}
+
 	if (![SLComposeViewController
 	        isAvailableForServiceType:SLServiceTypeFacebook]) {
 		if (![userDefaults boolForKey:kSocialServices]) {
 			[userDefaults setBool:YES
 			               forKey:kSocialServices];
 			[UIAlertView showAlertViewWithTitle:@"Social Accounts"
-			                            message:@"To see or post activity to "
-			                            @"Facebook from this app, the accounts must "
-			                            @"be setup under Settings."
+			                            message:@"To see or post activity to Facebook from this app, the accounts must be setup under Settings."
 			                  cancelButtonTitle:@"OK"
 			                  otherButtonTitles:nil
 			                          onDismiss:nil
@@ -119,12 +129,12 @@ BOOL hasFacebook = NO;
 	[self.fbClient getPath:@"me/home"
 	    parameters:parameters
 	    success:^(AFHTTPRequestOperation *operation, id responseObject) {
-          NSString *responseString =
-              [[NSString alloc] initWithBytes:[responseObject bytes]
-                                       length:[responseObject length]
-                                     encoding:NSUTF8StringEncoding];
-
-          NSLog(responseString);
+//          NSString *responseString =
+//              [[NSString alloc] initWithBytes:[responseObject bytes]
+//                                       length:[responseObject length]
+//                                     encoding:NSUTF8StringEncoding];
+//
+//          NSLog(responseString);
           NSDictionary *data =
               [NSJSONSerialization JSONObjectWithData:responseObject
                                               options:0
